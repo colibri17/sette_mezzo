@@ -10,9 +10,9 @@ class DynamicProgrammer(Player):
 
     def __init__(self):
         super().__init__()
-        self.learned = 0
         self.theta = .001
         self.gamma = 1
+        self.policy = None
 
     def random_policy(self, state):
         return {"hit": .50, "stick": .50}
@@ -70,33 +70,12 @@ class DynamicProgrammer(Player):
                 return value_fn, pi
 
     def learn(self, environment):
+        logger.info('Learning..')
         state_space = environment.generate_state_space()
         value_fn, pi = self.policy_iteration(environment, state_space)
-        logger.info('Optimization completed.')
+        logger.info('Learning completed.')
         self.policy = pi
 
-    def act(self, environment):
-        if not self.learned:
-            self.learn(environment)
-            self.learned = True
-        else:
-            pass
-
-    def policy_eval_two_arrays(state_count, gamma, theta, get_policy, get_transitions):
-        """
-        This function uses the two-array approach to evaluate the specified policy for the specified MDP:
-
-        'state_count' is the total number of states in the MDP. States are represented as 0-relative numbers.
-
-        'gamma' is the MDP discount factor for rewards.
-
-        'theta' is the small number threshold to signal convergence of the value function (see Iterative Policy Evaluation algorithm).
-
-        'get_policy' is the stochastic policy function - it takes a state parameter and returns list of tuples,
-            where each tuple is of the form: (action, probability).  It represents the policy being evaluated.
-
-        'get_transitions' is the state/reward transiton function.  It accepts two parameters, state and action, and returns
-            a list of tuples, where each tuple is of the form: (next_state, reward, probabiliity).
-
-        """
-        pass
+    def act(self):
+        policy = self.policy[tuple(self.draw.draw_data)]
+        return max(policy.keys(), key=lambda key: policy[key])

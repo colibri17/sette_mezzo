@@ -25,7 +25,7 @@ class Draw:
 
     def is_consistent(self, deck):
         draw_names = list(map(lambda x: x[0], self.draw_data))
-        is_consistent = all(draw_names.count(x) <= deck.deck[x] for x in draw_names)
+        is_consistent = all(draw_names.count(x) <= deck.deck_data[x] for x in draw_names)
         return is_consistent
 
     def without_last_entry(self):
@@ -33,3 +33,9 @@ class Draw:
 
     def __len__(self):
         return len(self.draw_data)
+
+    def __sub__(self, other):
+        i = 0
+        while i < len(other) and self.draw_data[i] == other.draw_data[i]:
+            i += 1
+        return Draw(self.draw_data[i:])

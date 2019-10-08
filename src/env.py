@@ -16,12 +16,13 @@ TOP = 7.5
 
 class SetteMezzoEnv(gym.Env):
 
-    def __init__(self):
+    def __init__(self, depth=4):
         self.game_deck = decks.Deck()
         self.initial_deck = decks.Deck()
         self.player = players.player.Player()
+        self.opponent_player = players.player.Player()
         self.initial_player = players.player.Player()
-        self.depth = 5
+        self.depth = depth
         self.top = 7.5
         self.END_NAME, self.END_VALUE = 'END_NAME', -1
         self.action_space = ['hit', 'stick']
@@ -33,17 +34,18 @@ class SetteMezzoEnv(gym.Env):
 
     def generate_state_space(self):
         raw_draws = self.generate_draws(self.depth)
-        allowed_draws = self.filter_draws_by_consistency(raw_draws, self.game_deck)
-        end_draws = self.add_terminal_states(allowed_draws)
-        burst_draws = self.add_burst_states(allowed_draws)
-        return allowed_draws + end_draws + burst_draws
+        consistent_draws = self.filter_draws_by_consistency(raw_draws, self.game_deck)
+        init_draws = self.filter_draws_by_initial_state(consistent_draws, self.player)
+        end_draws = self.add_terminal_states(init_draws)
+        burst_draws = self.add_burst_states(init_draws, self.game_deck)
+        return init_draws + end_draws + burst_draws
 
-    def add_burst_states(self, draw_list):
+    def add_burst_states(self, draw_list, deck):
         burst_draws = []
         for card in decks.CARD_NAMES:
             for draw in draw_list:
                 burst_draw = draws.Draw(copy.deepcopy(draw.draw_data) + [(card, decks.DECK_VALUES[card])])
-                if burst_draw.sum() + self.player.sum() > self.top:
+                if burst_draw.sum() > self.top and (burst_draw - self.player.draw).is_consistent(deck):
                     burst_draws.append(burst_draw)
         return burst_draws
 
@@ -58,19 +60,28 @@ class SetteMezzoEnv(gym.Env):
         allowed_draws = []
         for draw in draw_list:
             draw_sum = draw.sum()
-            if draw.is_consistent(deck) and draw_sum <= self.top:
+            if (draw - self.player.draw).is_consistent(deck) and draw_sum <= self.top:
                 allowed_draws.append(draw)
-        logger.debug('Number of allowed draws %d', len(allowed_draws))
+        logger.debug('Number of allowed draws by consistency %d', len(allowed_draws))
+        return allowed_draws
+
+    def filter_draws_by_initial_state(self, draw_list, player):
+        allowed_draws = []
+        for draw in draw_list:
+            if draw.draw_data[:len(player.draw.draw_data)] == player.draw.draw_data:
+                allowed_draws.append(draw)
+        logger.debug('Number of allowed draws by initial state %s', len(allowed_draws))
         return allowed_draws
 
     def filter_draws_by_stick(self, draw_list, deck, player):
         allowed_draws = []
         for draw in draw_list:
             draw_sum = draw.sum()
-            # Find combinations were we lose
+            # Find combinations where we lose
             if draw.is_consistent(deck) and draw_sum <= self.top:
                 # -1 so to properly handle when player_sum = 0
-                draw_sum_nolast = -1 if len(draw) == 1 else draws.Draw(draw.draw_data[:-1]).sum()
+                no_last = draws.Draw(draw.draw_data[:-1])
+                draw_sum_nolast = -1 if len(no_last) == 0 else no_last.sum()
                 # Assuming we play against the dealer we need >=
                 if draw_sum_nolast < player.sum() <= draw_sum:
                     allowed_draws.append(draw)
@@ -79,11 +90,14 @@ class SetteMezzoEnv(gym.Env):
 
     def _get_reward_stick(self, deck, player):
         """
-        Compute the probability that the casher beats the
-        sum reached by the player
+        Compute the probability that the deck beats the
+        sum reached by the opponent_player
         """
-        raw_draws = self.generate_draws(self.depth - 1)
-        allowed_draws = self.filter_draws_by_stick(raw_draws, deck, player)
+        if self.opponent_player.sum() >= player.sum():
+            return -1
+        raw_draws = self.generate_draws(self.depth)
+        init_draws = self.filter_draws_by_initial_state(raw_draws, self.opponent_player)
+        allowed_draws = self.filter_draws_by_stick(init_draws, deck, player)
         draw_probs = self.get_draw_probs(allowed_draws, deck)
         # In this way I obtain the probability of winning as number in [-1,1]
         return 2 * (1 - sum(draw_probs)) - 1
@@ -91,9 +105,10 @@ class SetteMezzoEnv(gym.Env):
     def get_draw_probs(self, draw_list, deck):
         draw_probs = []
         for draw in draw_list:
-            help_deck = decks.Deck(copy.deepcopy(deck.deck))
+            corrected_draw = draw - self.opponent_player.draw
+            help_deck = decks.Deck(copy.deepcopy(deck.deck_data))
             draw_prod = 1
-            for card_name, card_value in draw.draw_data:
+            for card_name, card_value in corrected_draw.draw_data:
                 draw_prod *= help_deck.get_prob_of_card(card_name)
                 help_deck.update(card_name)
             draw_probs.append(draw_prod)
@@ -122,6 +137,14 @@ class SetteMezzoEnv(gym.Env):
 
     def set_current_player(self, player):
         self.player = player
+
+    def set_opponent_player(self, opponent_player):
+        self.opponent_player = opponent_player
+
+    def get_card(self, card_name=None):
+        self.game_deck.update(card_name)
+        self.player.update(card_name)
+        return card_name
 
     def step(self, action):
         if action == 'hit':
@@ -161,7 +184,7 @@ class SetteMezzoEnv(gym.Env):
     def align_deck(self, draw):
         self.initial_deck = copy.deepcopy(self.game_deck)
         self.initial_player = copy.deepcopy(self.player)
-        for card_name, _ in draw.draw_data:
+        for card_name, _ in (draw - self.player.draw).draw_data:
             self.initial_deck.update(card_name)
             self.initial_player.update(card_name)
 

@@ -26,15 +26,15 @@ DECK_VALUES = {'1': 1,
 class Deck:
 
     def __init__(self, deck=None):
-        self.deck = DECK if deck is None else deck
+        self.deck_data = dict(DECK) if deck is None else dict(deck)
         self._update_probs()
 
     def update(self, card):
-        self.deck[card] -= 1
+        self.deck_data[card] -= 1
         self._update_probs()
 
     def _update_probs(self):
-        probs = list(np.array(list(self.deck.values())) / np.array(list(self.deck.values())).sum())
+        probs = list(np.array(list(self.deck_data.values())) / np.array(list(self.deck_data.values())).sum())
         self.card_probs = {card: prob for card, prob in zip(CARD_NAMES, probs)}
 
     def get_allowed_cards(self):
