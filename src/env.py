@@ -82,9 +82,11 @@ class SetteMezzoEnv(gym.Env):
                 # -1 so to properly handle when player_sum = 0
                 no_last = draws.Draw(draw.draw_data[:-1])
                 draw_sum_nolast = -1 if len(no_last) == 0 else no_last.sum()
-                # Assuming we play against the dealer we need >=
-                if draw_sum_nolast < player.sum() <= draw_sum:
-                    allowed_draws.append(draw)
+                # Because opponent player does not play beyond the limit
+                if not (draw_sum_nolast >= self.opponent_player.limit):
+                    # Assuming we play against the dealer we need <=
+                    if draw_sum_nolast < player.sum() < draw_sum:
+                        allowed_draws.append(draw)
         logger.debug('Number of allowed draws %d', len(allowed_draws))
         return allowed_draws
 
@@ -93,16 +95,18 @@ class SetteMezzoEnv(gym.Env):
         Compute the probability that the deck beats the
         sum reached by the opponent_player
         """
+        # This is the case where the initial opponent card is higher than player
+        # initial card
         if self.opponent_player.sum() >= player.sum():
             return -1
         raw_draws = self.generate_draws(self.depth)
         init_draws = self.filter_draws_by_initial_state(raw_draws, self.opponent_player)
         allowed_draws = self.filter_draws_by_stick(init_draws, deck, player)
-        draw_probs = self.get_draw_probs(allowed_draws, deck)
+        draw_probs = self.get_stick_probs(allowed_draws, deck)
         # In this way I obtain the probability of winning as number in [-1,1]
         return 2 * (1 - sum(draw_probs)) - 1
 
-    def get_draw_probs(self, draw_list, deck):
+    def get_stick_probs(self, draw_list, deck):
         draw_probs = []
         for draw in draw_list:
             corrected_draw = draw - self.opponent_player.draw
@@ -126,8 +130,7 @@ class SetteMezzoEnv(gym.Env):
         return raw_draws
 
     def _get_reward_hit(self, player):
-        reward = -1 if player.is_burst() else 0
-        return reward
+        return -1 if player.is_burst() else 0
 
     def player_is_burst(self):
         return self.player.is_burst()
@@ -135,10 +138,8 @@ class SetteMezzoEnv(gym.Env):
     def _update_player_deck(self, card):
         self.player.update(card)
 
-    def set_current_player(self, player):
+    def set_current_players(self, player, opponent_player):
         self.player = player
-
-    def set_opponent_player(self, opponent_player):
         self.opponent_player = opponent_player
 
     def get_card(self, card_name=None):

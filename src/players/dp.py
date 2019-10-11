@@ -8,8 +8,8 @@ logger = logging.getLogger('sette-mezzo')
 
 class DynamicProgrammer(Player):
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, limit=None):
+        super().__init__(limit)
         self.theta = .001
         self.gamma = 1
         self.policy = None

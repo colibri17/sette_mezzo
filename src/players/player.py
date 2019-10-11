@@ -5,10 +5,11 @@ import env
 
 class Player:
 
-    def __init__(self):
+    def __init__(self, limit=None):
         self.draw = draws.Draw([])
         self.deck = decks.Deck()
         self.burst = False
+        self.limit = limit
 
     def update(self, card_name):
         self.draw.update_with_name(card_name)
@@ -22,4 +23,3 @@ class Player:
 
     def set_burst(self, burst):
         self.burst = burst
-
