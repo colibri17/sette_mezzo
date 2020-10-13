@@ -5,7 +5,9 @@ from players import dp, greedy
 
 logger = logging.getLogger('sette-mezzo')
 
-environment = env.SetteMezzoEnv(4)
+depth = 4
+
+environment = env.SetteMezzoEnv(depth)
 logger.info('Deck %s', environment.game_deck.deck_data)
 
 dp_player = dp.DynamicProgrammer()
@@ -23,20 +25,22 @@ environment.get_card_and_update(player_card)
 environment.set_current_players(dp_player, greedy_player)
 dp_player.learn(environment)
 action = dp_player.act()
-logger.info('Player draw_list %s, action %s', dp_player.draw_collection.draw_data, action)
+logger.info('Player draw_list %s, action %s', dp_player.draw_collection.data, action)
 
 i = 2
 playing = action == 'hit'
 while playing:
     player_card = input('Player card number %d: ' % i)
     environment.get_card_and_update(player_card)
-    action = dp_player.act()
-    logger.info('Player draw_list %s, action %s', dp_player.draw_collection.draw_data, action)
-    if action == 'stick' or dp_player.is_busted():
+    if len(dp_player.draw_collection.data) > depth:
+        logger.info('More than allowed depth. Increase the depth variable')
         playing = False
-
-# for _ in range(40):
-#     card = environment.get_card('3')
-#     dp_player.act(card)
-#     environment.step('stick')
-#     logger.info('Deck %s', environment.game_deck)
+        break
+    if not dp_player.is_busted():
+        action = dp_player.act()
+        logger.info('Player draw_list %s, action %s', dp_player.draw_collection.data, action)
+    else:
+        logger.info('Player is busted!')
+        playing = False
+    if action == 'stick':
+        playing = False
