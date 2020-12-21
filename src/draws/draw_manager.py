@@ -45,6 +45,11 @@ class DrawManager:
         return self
 
     def filter_by_sum(self):
+        """
+        Filter the combinations of card sequences which match with
+        the maximum score allowed for the game (i.e. 7.5)
+        :return: self
+        """
         for draw_list in self.draw_ensemble:
             if draw_list.sum() <= env.TOP:
                 self.sum_consistent_draws.append(draw_list)
@@ -53,7 +58,17 @@ class DrawManager:
         return self
 
     def filter_by_deck(self, input_deck, input_player):
+        """
+        Filter the combinations of card sequences which match with
+        the cards available in the deck
+        :param input_deck: the comparison deck
+        :param input_player:
+        :return: self
+        """
         for draw_list in self.draw_ensemble:
+            # We remove the cards the input player already drawn because
+            # we want to generate all the next possibile card sequences the
+            # player can generate
             if (draw_list - input_player.draw_collection).is_consistent(input_deck):
                 self.deck_consistent_draws.append(draw_list)
         self.update_collection(self.deck_consistent_draws)
@@ -61,6 +76,12 @@ class DrawManager:
         return self
 
     def filter_by_initial_state(self, player):
+        """
+        Filter the combinations of card sequences which match with the
+        initial cards drawn by the player
+        :param player:
+        :return: self
+        """
         for draw_list in self.draw_ensemble:
             if draw_list.data[:len(player.draw_collection.data)] == player.draw_collection.data:
                 self.init_consistent_draws.append(draw_list)
@@ -196,23 +217,5 @@ class DrawManager:
         return self
 
     def add_terminal_state(self):
+        """Add a terminal state"""
         self.add_collection([env.terminal])
-
-    def add_terminal_states(self):
-        for draw_list in self.filtered_draws:
-            term = draw_list.copy().update(env.END_NAME)
-            self.end_draws.append(term)
-        # TODO: add a decorator
-        self.add_collection(self.end_draws)
-        logger.debug('Number of terminal states %s', len(self.end_draws))
-        return self
-
-    def add_busted_states(self, input_player, input_deck):
-        for card in deck_factory.CARD_NAMES:
-            for draw_list in self.filtered_draws:
-                burst_draw = draw_list.copy().update(card)
-                if burst_draw.sum() > env.TOP and (burst_draw - input_player.draw_collection).is_consistent(input_deck):
-                    self.busted_draws.append(burst_draw)
-        self.add_collection(self.busted_draws)
-        logger.debug('Number of busted states %s', len(self.busted_draws))
-        return self

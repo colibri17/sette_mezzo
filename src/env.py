@@ -31,6 +31,13 @@ class SetteMezzoEnv(gym.Env):
         self.player = players.player.Player()
 
     def generate_state_space(self, input_player):
+        """
+        Generate the combinations of all the allowed card sequences
+        which can be drawn from here on.
+        The maximum card sequence lenght is specified by self.depth
+        :param input_player: the player for which the state space is generated
+        :return: the set of all possible allowed combinations
+        """
         if not self.whole_state_space:
             self.whole_state_space = self.draw_manager.generate(self.depth).draw_ensemble
         self.draw_manager = draws.draw_manager.DrawManager(self.whole_state_space)

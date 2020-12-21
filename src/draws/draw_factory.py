@@ -37,6 +37,12 @@ class DrawCollection:
         return env.TOP - residual + mad_value
 
     def is_consistent(self, input_deck):
+        """
+        Check if all the cards contained in input_deck have smaller
+        count than cards contained in the game deck.
+        :param input_deck: the comparison deck
+        :return: True if the input_deck is consistent. False otherwise
+        """
         is_consistent = all(self.data.count(x) <= input_deck.deck_data[x] for x in self.data)
         return is_consistent
 
