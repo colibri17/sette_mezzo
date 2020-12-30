@@ -9,6 +9,11 @@ logger = logging.getLogger('sette-mezzo')
 
 
 class DrawManager:
+    """
+    This class allows to work on combinations of
+    card sequences, by filtering, updating or removing
+    some of them.
+    """
 
     def __init__(self, draw_collection):
         self.draw_ensemble = draw_collection
@@ -33,6 +38,9 @@ class DrawManager:
 
     def add_collection(self, new_collection):
         self.draw_ensemble += new_collection
+
+    def freeze(self):
+        self.draw_ensemble = [x.freeze() for x in self.draw_ensemble]
 
     def generate(self, depth):
         for i in range(1, depth + 1):
@@ -67,8 +75,10 @@ class DrawManager:
         """
         for draw_list in self.draw_ensemble:
             # We remove the cards the input player already drawn because
-            # we want to generate all the next possibile card sequences the
-            # player can generate
+            # we want to generate all the possible card sequences the
+            # player can obtain including his initial card
+            # It is like draw_list is consistent with the input_deck added by
+            # the card the player already drawn
             if (draw_list - input_player.draw_collection).is_consistent(input_deck):
                 self.deck_consistent_draws.append(draw_list)
         self.update_collection(self.deck_consistent_draws)
@@ -91,95 +101,24 @@ class DrawManager:
         return self
 
     def filter_by_stick(self, input_player_sum, opponent_player):
-        for draw_list in self.draw_ensemble:
-            draw_sum = draw_list.sum()
-            # Find combinations where we lose
-            if draw_sum <= env.TOP:
-                # -1 so to properly handle when player_sum = 0
-                no_last = draws.draw_factory.DrawCollection(draw_list.data[:-1])
-                draw_sum_nolast = -1 if len(no_last) == 0 else no_last.sum()
-                # Because opponent input_player does not play beyond the limit, so
-                # this states should be deleted from the state space
-                # because they cannot be reached
-                if not (draw_sum_nolast >= opponent_player.limit):
-                    # Assuming we play against the dealer we need <=
-                    if draw_sum_nolast < input_player_sum < draw_sum:
-                        self.stick_consistent_draws.append(draw_list)
-        self.update_collection(self.stick_consistent_draws)
-        logger.debug('Number of stick consistent draws %s', len(self.stick_consistent_draws))
-        return self
-
-    def filter_by_stick_complete_mixed_strategy(self, input_player_sum, opponent_player):
         """
-        Player keeps to play up either the sum is greater or equal the opponent sum.
-        If it hit its own limit he always stops
+        Opponent strategy keeps playing up to its own
+        limit is reached, independently of the player sum
         """
         for draw_list in self.draw_ensemble:
+            # Current sum
             draw_sum = draw_list.sum()
-            no_last = draw_list.delete_last()
-            no_two_last = draw_list.delete_last().delete_last()
-            draw_sum_nolast = -1 if len(no_last) == 0 else no_last.sum()
-            draw_sum_notwolast = -2 if len(no_two_last) == 0 else no_two_last.sum()
-            if draw_sum_nolast >= input_player_sum:
-                continue
-            elif draw_sum_nolast >= opponent_player.limit:
-                if draw_sum_notwolast < opponent_player.limit <= draw_sum_nolast:
-                    if opponent_player.limit < draw_sum_nolast:
-                        self.win.append(draw_list)
-                    else:
-                        self.tie.append(draw_list)
-                continue
-            elif draw_sum_nolast < input_player_sum:
-                if draw_sum > env.TOP:
-                    self.win.append(draw_list)
-                elif input_player_sum < draw_sum:
-                    self.lose.append(draw_list)
-                elif input_player_sum == draw_sum:
-                    self.tie.append(draw_list)
-                elif input_player_sum > draw_sum:
-                    continue
-                else:
-                    raise ValueError
-            else:
-                raise ValueError
-        return self
-
-    def filter_by_stick_complete_player_strategy(self, input_player_sum, opponent_player):
-        """
-        Player keeps playing up to the opposite sum is beaten. In case of draw he decides to stop
-        """
-        for draw_list in self.draw_ensemble:
-            draw_sum = draw_list.sum()
-            no_last = draw_list.delete_last()
-            draw_sum_nolast = -1 if len(no_last) == 0 else no_last.sum()
-            if draw_sum_nolast >= input_player_sum:
-                continue
-            elif draw_sum_nolast < input_player_sum:
-                if draw_sum > env.TOP:
-                    self.win.append(draw_list)
-                elif input_player_sum < draw_sum:
-                    self.lose.append(draw_list)
-                elif input_player_sum == draw_sum:
-                    self.tie.append(draw_list)
-                elif input_player_sum > draw_sum:
-                    continue
-                else:
-                    raise ValueError
-            else:
-                raise ValueError
-        return self
-
-    def filter_by_stick_complete_bookmaker_strategy(self, input_player_sum, opponent_player):
-        """
-        Bookmaker strategy keeps playing up to its own limit is reached, independently of the player sum
-        """
-        for draw_list in self.draw_ensemble:
-            draw_sum = draw_list.sum()
+            # Sum without last element
             draw_sum_nolast = draw_list.delete_last().sum()
+            # If draw_list sum is less than the limit
+            # the player keeps hitting and so the
+            # state is not a stop state
             if draw_sum < opponent_player.limit:
                 continue
             elif draw_sum >= opponent_player.limit:
+                # If the following is not true the player stopped before
                 if draw_sum_nolast < opponent_player.limit:
+                    # TODO: check the second > because might be a >=
                     if draw_sum > env.TOP or input_player_sum > draw_sum:
                         self.win.append(draw_list)
                     elif input_player_sum < draw_sum:
@@ -203,17 +142,6 @@ class DrawManager:
                     draw_prod *= help_deck.get_prob_of_card(card_name)
                     help_deck.update(card_name)
                 draw_ensemble_sum.append(draw_prod)
-        return self
-
-    def get_prob_sum(self, input_deck, input_player):
-        for draw in self.draw_ensemble:
-            corrected_draw = draw - input_player.draw_collection
-            help_deck = input_deck.copy()
-            draw_prod = 1
-            for card_name in corrected_draw.data:
-                draw_prod *= help_deck.get_prob_of_card(card_name)
-                help_deck.update(card_name)
-            self.draw_probs.append(draw_prod)
         return self
 
     def add_terminal_state(self):

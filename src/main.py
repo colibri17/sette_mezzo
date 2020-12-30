@@ -5,10 +5,10 @@ from players import dp, greedy
 
 logger = logging.getLogger('sette-mezzo')
 
-depth = 4
+depth = 5
 
 environment = env.SetteMezzoEnv(depth)
-logger.info('Deck %s', environment.game_deck.deck_data)
+logger.info('Deck %s', environment.game_deck.data)
 
 dp_player = dp.DynamicProgrammer()
 greedy_player = greedy.GreedyProgrammer(limit=5)
@@ -33,7 +33,7 @@ while playing:
     player_card = input('Player card number %d: ' % i)
     environment.get_card_and_update(player_card)
     if len(dp_player.draw_collection.data) > depth:
-        logger.info('More than allowed depth. Increase the depth variable')
+        logger.info('More than allowed depth. Increase the variable depth')
         playing = False
         break
     if not dp_player.is_busted():

@@ -1,3 +1,8 @@
+"""
+Class which allows to create, modify, copy
+decks.
+"""
+
 import numpy as np
 
 CARD_NAMES = ['1', '2', '3', '4', '5', '6', '7', 'fig', 'mad']
@@ -26,22 +31,19 @@ DECK_VALUES = {'1': 1,
 class Deck:
 
     def __init__(self, deck=None):
-        self.deck_data = dict(DECK) if deck is None else dict(deck)
+        self.data = dict(DECK) if deck is None else dict(deck)
         self._update_probs()
 
     def update(self, card):
-        self.deck_data[card] -= 1
+        self.data[card] -= 1
         self._update_probs()
 
     def copy(self):
-        return Deck(dict(self.deck_data))
+        return Deck(dict(self.data))
 
     def _update_probs(self):
-        probs = list(np.array(list(self.deck_data.values())) / np.array(list(self.deck_data.values())).sum())
+        probs = list(np.array(list(self.data.values())) / np.array(list(self.data.values())).sum())
         self.card_probs = {card: prob for card, prob in zip(CARD_NAMES, probs)}
-
-    def get_allowed_cards(self):
-        return list(key for key, value in self.card_probs.items() if value > 0)
 
     def get_prob_of_card(self, card):
         return self.card_probs[card]
@@ -49,5 +51,17 @@ class Deck:
     def get_probs(self):
         return self.card_probs.values()
 
+    def get_cards(self):
+        return self.card_probs.keys()
+
+    def get_cards_and_probs(self):
+        return self.card_probs.items()
+
     def is_feasible(self):
         return all(value >= 0 for value in self.card_probs.values())
+
+    def __repr__(self):
+        return str(self.data)
+
+    def __str__(self):
+        return str(self.data)

@@ -45,7 +45,7 @@ for n_game in range(n):
     # Reset the game
     environment = env.SetteMezzoEnv(depth)
     player_card, opponent_card = environment.get_card_and_update(), environment.get_card_and_update()
-    logger.debug('Deck %s', environment.game_deck.deck_data)
+    logger.debug('Deck %s', environment.game_deck.data)
     dp_player = player_policies[(player_card, opponent_card)].copy()
     greedy_player = greedy.GreedyProgrammer(limit=limit)
     dp_player.reset_status()

@@ -43,8 +43,11 @@ class DrawCollection:
         :param input_deck: the comparison deck
         :return: True if the input_deck is consistent. False otherwise
         """
-        is_consistent = all(self.data.count(x) <= input_deck.deck_data[x] for x in self.data)
+        is_consistent = all(self.data.count(x) <= input_deck.data[x] for x in self.data)
         return is_consistent
+
+    def freeze(self):
+        return DrawCollection(tuple(self.data))
 
     def copy(self):
         return DrawCollection(list(self.data))
@@ -57,3 +60,9 @@ class DrawCollection:
         while i < len(other) and self.data[i] == other.data[i]:
             i += 1
         return DrawCollection(self.data[i:])
+
+    def __repr__(self):
+        return str(self.data)
+
+    def __str__(self):
+        return str(self.data)

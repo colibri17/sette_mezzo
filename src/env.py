@@ -33,7 +33,10 @@ class SetteMezzoEnv(gym.Env):
     def generate_state_space(self, input_player):
         """
         Generate the combinations of all the allowed card sequences
-        which can be drawn from here on.
+        which can be drawn including the initial card already
+        drawn by the player. Namely. excluding the initial card
+        drawn by the opponent the allowed draws are generated. These
+        will be the states of the game.
         The maximum card sequence lenght is specified by self.depth
         :param input_player: the player for which the state space is generated
         :return: the set of all possible allowed combinations
@@ -46,6 +49,7 @@ class SetteMezzoEnv(gym.Env):
                                                  .filter_by_sum()
                                                  .filter_by_initial_state(input_player)).draw_ensemble)
         self.draw_manager.add_terminal_state()
+        self.draw_manager.freeze()
         return self.draw_manager.draw_ensemble
 
     def _get_reward_stick(self, input_deck, input_player, opponent_player):
@@ -56,20 +60,29 @@ class SetteMezzoEnv(gym.Env):
         # This is the case where the opponent
         # card is higher than input_player initial card
         input_player_sum = input_player.sum()
-        if self.opponent_player.sum() >= input_player_sum:
+        if self.opponent_player.sum() > input_player_sum:
             return -1
+        # TODO: why don't we use the self.whole_state_space which
+        # TODO: should be already be defined at the very beginning?
         if not self.whole_state_space:
             self.whole_state_space = self.draw_manager.generate(self.depth).draw_ensemble
         self.draw_manager = draws.draw_manager.DrawManager(self.whole_state_space)
+        # TODO: why do we use the game deck?
+        # TODO: basically we generate the state space here.
+        # TODO: Why do not use the same we already computed?
+        # Should not we use the input deck?
+        # filter_by_deck: Get all the card combinations the opponent can obtain
         (self.draw_manager
          .filter_by_deck(self.game_deck, opponent_player)
          .filter_by_initial_state(opponent_player)
-         .filter_by_stick_complete_bookmaker_strategy(input_player_sum, opponent_player)
+         .filter_by_stick(input_player_sum, opponent_player)
          .get_prob_sum_complete(input_deck, opponent_player))
-        # In this way I obtain the probability of winning as number in [-1,1]
+        # In this way I obtain the probability of winning as a number in [-1,1]
+        # TODO: rescale so that the sum of the 3 probs is 1
         return 2 * (sum(self.draw_manager.prob_win) + sum(self.draw_manager.prob_tie)) - 1
 
     def _get_reward_hit(self, player):
+        # TODO: let this method be called by get_transitions_hit
         return -1 if player.is_busted() else 0
 
     def set_current_players(self, player, opponent_player):
@@ -88,36 +101,71 @@ class SetteMezzoEnv(gym.Env):
         return card_name
 
     def get_transitions_stick(self, draw):
+        """
+        Returns the terminal state,
+        the corresponding reward and
+        the probability to reach it
+        :param draw:
+        :return:
+        """
         prob = 1
         reward = self._get_reward_stick(self.initial_deck, self.initial_player, self.opponent_player)
-        return [[terminal, reward, prob]]
+        return [(terminal.freeze(), reward, prob)]
 
     def get_transitions_hit(self, draw):
-        probs = self.initial_deck.get_probs()
-        rewards = []
-        next_draw_collection = []
+        """
+        Compute the next possible states, rewards
+        and probabilities starting from
+        the current draw.
+        :param draw: card collection representing current state
+        :return: list of all possible next states and corresponding rewards and probs
+        """
+        transitions = []
+        cards_probs = self.initial_deck.get_cards_and_probs()
         # Mimic the draw for the next card
-        for card in self.initial_deck.get_allowed_cards():
-            help_deck = self.initial_deck.copy()
-            help_player = self.initial_player.copy()
-            help_deck.update(card)
-            help_player.update(card)
-            if help_player.is_busted():
-                rewards.append(-1)
-                next_draw_collection.append(terminal)
-            else:
-                rewards.append(0)
-                next_draw_collection.append(draw.copy().update(card))
-        return list(zip(next_draw_collection, rewards, probs))
+        for card, prob in cards_probs:
+            # TODO: Instead of checking prob > 0 should
+            # TODO: we check on the whole state space?
+            if prob > 0:
+                help_deck = self.initial_deck.copy()
+                help_player = self.initial_player.copy()
+                help_deck.update(card)
+                help_player.update(card)
+                if help_player.is_busted():
+                    # If player is busted reward is negative
+                    transitions.append((terminal.freeze(), -1, prob))
+                else:
+                    transitions.append((draw.copy().update(card).freeze(), 0, prob))
+        return transitions
 
     def align_decks(self, draw_list):
+        """
+        Copy the current deck and then update it with the
+        next cards the player will draw.
+        :param draw_list:
+        :return:
+        """
+        #TODO: moving in deck and player
         self.initial_deck = self.game_deck.copy()
         self.initial_player = self.player.copy()
+        # Threse is a difference because we
+        # create the deck having init opponent card
+        # + init player card (already in self.game_deck)
+        # + next player card (which have to be added)
         for card in (draw_list - self.player.draw_collection).data:
             self.initial_deck.update(card)
             self.initial_player.update(card)
 
     def get_transitions(self, draw_list, action):
+        """
+        Generates all the possible next states which
+        can be reached from the provided card sequence
+        combination, together with corresponding rewards
+        and reaching probabilities
+        :param draw_list: Card sequence
+        :param action: action to take
+        :return: None
+        """
         if draw_list.data[0] == END_NAME:
             return [[draw_list, 0, 1]]
         if len(draw_list.data) >= self.depth:
