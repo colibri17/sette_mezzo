@@ -5,7 +5,7 @@ from players import dp, greedy
 
 logger = logging.getLogger('sette-mezzo')
 
-depth = 5
+depth = 4
 
 environment = env.SetteMezzoEnv(depth)
 logger.info('Deck %s', environment.game_deck.data)

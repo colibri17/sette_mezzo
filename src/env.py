@@ -1,8 +1,10 @@
 import logging
+
 import gym
 import numpy as np
-import draws.draw_manager
+
 import draws.draw_factory
+import draws.draw_manager
 import players.player
 from decks import deck_factory
 
@@ -145,7 +147,7 @@ class SetteMezzoEnv(gym.Env):
         :param draw_list:
         :return:
         """
-        #TODO: moving in deck and player
+        # TODO: moving in deck and player
         self.initial_deck = self.game_deck.copy()
         self.initial_player = self.player.copy()
         # Threse is a difference because we

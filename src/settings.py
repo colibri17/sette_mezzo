@@ -13,7 +13,7 @@ def clean_dirs(dirs):
             os.makedirs(path)
 
 
-run_dir = 'runProva6'
+run_dir = 'run1'
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 BASE_DIR = os.path.dirname(CURRENT_DIR)
