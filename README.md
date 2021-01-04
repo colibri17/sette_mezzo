@@ -22,11 +22,12 @@ the score of the opponent.
 The algorithm to obtain an optimal policy is based on reinforcement learning. The steps proceeds as follow:
 
 * The user is asked for player and opponent cards.  
-  Assume for example player card is 2 and opponent card is 6.
+  *Example: Assume for example player card is 2 and opponent card is 6*
 * All the possible states are generated. Namely, the combinations of all the allowed card sequences 
   which can be drawn are produced. This process is carried out by first generating all the combinations, 
   and then by filtering out those ones that do not match with the available cards 
   in the deck or that bust the player.
+  *Example: different states are generated, as 
 * The reinforcement learning applies. We apply policy iteration algorithm, by iteratively ciclying
   on policy evaluation and policy improvements steps. 
 

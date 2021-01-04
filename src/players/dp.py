@@ -1,19 +1,17 @@
 import logging
 import operator
 
-from players.player import Player
-
 logger = logging.getLogger('sette-mezzo')
 
 
-class DynamicProgrammer(Player):
+class DynamicProgrammer:
 
-    def __init__(self, draw_collection=None, policy=None, limit=None):
-        super().__init__(draw_collection=draw_collection,
-                         policy=policy, limit=limit)
+    def __init__(self, policy=None, limit=None):
         self.theta = .001
         self.gamma = 1
         self.value_fn = None
+        self.policy = None
+        self.state_space = None
 
     def policy_evaluation(self, policy, environment, state_space):
         v = {draw.data: 0 for draw in state_space}
@@ -68,17 +66,22 @@ class DynamicProgrammer(Player):
                 self.policy = pi
                 self.value_fn = value_fn,
 
-    def learn(self, environment):
-        logger.info('Learning..')
-        state_space = environment.generate_state_space(self)
-        self.policy_iteration(environment, state_space)
+    def _learn_policy(self, state):
+        logger.debug('Learning..')
+        logger.debug('First we generate the state space..')
+        state_space = state.generate_state_space(self)
+        logger.debug('Then we apply policy iteration algorithm..')
+        self.policy_iteration(state, state_space)
         logger.info('Learning completed.')
 
-    def act(self):
+    def step(self, state):
+        """
+        Given the input state, learn the optimal policy
+        by using a policy iteration algorithm. When
+        the policy is learned, it plays accordingly
+        :return: the optimal action chosen
+        """
+        if self.policy is None:
+            self._learn_policy(state)
         policy = self.policy[tuple(self.draw_collection.data)]
         return max(policy.keys(), key=lambda key: policy[key])
-
-    def copy(self):
-        return DynamicProgrammer(draw_collection=self.draw_collection.copy(),
-                                 policy=self.policy,
-                                 limit=self.limit)

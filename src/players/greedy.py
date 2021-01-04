@@ -21,7 +21,7 @@ class GreedyProgrammer(Player):
         if self.draw_collection.sum() >= self.limit:
             return 'stick'
         else:
-            if self.draw_collection.sum() <= opponent_player.draw_collection.sum():
+            if self.draw_collection.sum() <= opponent_player.draws.sum():
                 return 'hit'
             else:
                 return 'stick'

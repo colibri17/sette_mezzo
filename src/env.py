@@ -1,10 +1,9 @@
 import logging
 
-import gym
 import numpy as np
 
-import draws.draw_factory
-import draws.draw_manager
+from draws.draws_factory import Draws
+from draws.draws_manager import DrawManager
 import players.player
 from decks import deck_factory
 
@@ -12,27 +11,73 @@ logger = logging.getLogger('sette-mezzo')
 
 TOP = 7.5
 END_NAME = 'END'
-terminal = draws.draw_factory.DrawCollection([END_NAME])
+terminal = Draws([END_NAME])
 
 
-class SetteMezzoEnv(gym.Env):
+class Player:
 
-    def __init__(self, depth=4):
-        self.game_deck = deck_factory.Deck()
+    def __init__(self, id, draws=None, limit=None):
+        self.id = id
+        self.draws = Draws([]) if draws is None else draws
+        self.busted = self.is_busted()
+        self.limit = limit
+
+    def update(self, card_name):
+        self.draws.update(card_name)
+
+    def reset_status(self):
+        self.draws = Draws([])
+        self.busted = False
+
+    def sum(self):
+        return self.draws.sum()
+
+    def is_busted(self):
+        return self.draws.sum() > TOP
+
+    def set_bust(self, busted):
+        self.busted = busted
+
+    def copy(self):
+        raise NotImplementedError
+
+
+class SetteMezzoEnv:
+
+    def __init__(self, players, deck, depth=4):
+        self.num_actions = 0
+        self.player = players[0]
+        self.opponent_player = players[1]
+        self.game_deck = deck
         self.initial_deck = deck_factory.Deck()
-        self.player = players.player.Player()
-        self.opponent_player = players.player.Player()
-        self.initial_player = players.player.Player()
-        self.draw_manager = draws.draw_manager.DrawManager([])
         self.depth = depth
         self.action_space = ['hit', 'stick']
         self.whole_state_space = []
+        self.current_player = self.opponent_player
+        self.draw_manager = DrawManager([])
 
     def reset(self):
         self.game_deck = deck_factory.Deck()
         self.player = players.player.Player()
 
-    def generate_state_space(self, input_player):
+    def apply_action(self, action):
+        # Draw initial cards for both the players
+        if self.num_actions < 2:
+            if self.num_actions == 0:
+                card = input('Initial card opponent: ')
+            else:
+                card = input('Initial card player: ')
+            self.get_card(card)
+            self.updates(card)
+            if self.player == self.current_player:
+                self.current_player = self.opponent_player
+            else:
+                self.current_player = self.player
+            self.num_actions += 1
+        else:
+            pass
+
+    def generate_state_space(self, player):
         """
         Generate the combinations of all the allowed card sequences
         which can be drawn including the initial card already
@@ -40,19 +85,18 @@ class SetteMezzoEnv(gym.Env):
         drawn by the opponent the allowed draws are generated. These
         will be the states of the game.
         The maximum card sequence lenght is specified by self.depth
-        :param input_player: the player for which the state space is generated
+        :param player: the player for which the state space is generated
         :return: the set of all possible allowed combinations
         """
-        if not self.whole_state_space:
-            self.whole_state_space = self.draw_manager.generate(self.depth).draw_ensemble
-        self.draw_manager = draws.draw_manager.DrawManager(self.whole_state_space)
+        self.whole_state_space = self.draw_manager.generate(self.depth).draws_ensemble
+        self.draw_manager = DrawManager(self.whole_state_space)
         self.draw_manager.filtered_draws = list((self.draw_manager
-                                                 .filter_by_deck(self.game_deck, input_player)
+                                                 .filter_by_deck(self.game_deck, player)
                                                  .filter_by_sum()
-                                                 .filter_by_initial_state(input_player)).draw_ensemble)
+                                                 .filter_by_initial_state(player)).draws_ensemble)
         self.draw_manager.add_terminal_state()
         self.draw_manager.freeze()
-        return self.draw_manager.draw_ensemble
+        return self.draw_manager.draws_ensemble
 
     def _get_reward_stick(self, input_deck, input_player, opponent_player):
         """
@@ -67,8 +111,8 @@ class SetteMezzoEnv(gym.Env):
         # TODO: why don't we use the self.whole_state_space which
         # TODO: should be already be defined at the very beginning?
         if not self.whole_state_space:
-            self.whole_state_space = self.draw_manager.generate(self.depth).draw_ensemble
-        self.draw_manager = draws.draw_manager.DrawManager(self.whole_state_space)
+            self.whole_state_space = self.draw_manager.generate(self.depth).draws_ensemble
+        self.draw_manager = DrawManager(self.whole_state_space)
         # TODO: why do we use the game deck?
         # TODO: basically we generate the state space here.
         # TODO: Why do not use the same we already computed?
@@ -94,13 +138,17 @@ class SetteMezzoEnv(gym.Env):
     def get_card_and_update(self, card_name=None):
         card_name = self.get_card(card_name)
         self.game_deck.update(card_name)
-        self.player.update(card_name)
+        self.player.updates(card_name)
         return card_name
 
     def get_card(self, card_name=None):
         if card_name is None:
             card_name = np.random.choice(deck_factory.CARD_NAMES, p=list(self.game_deck.get_probs()))
         return card_name
+
+    def updates(self, card):
+        self.game_deck.update(card)
+        self.current_player.update(card)
 
     def get_transitions_stick(self, draw):
         """
@@ -131,13 +179,13 @@ class SetteMezzoEnv(gym.Env):
             if prob > 0:
                 help_deck = self.initial_deck.copy()
                 help_player = self.initial_player.copy()
-                help_deck.update(card)
-                help_player.update(card)
+                help_deck.updates(card)
+                help_player.updates(card)
                 if help_player.is_busted():
                     # If player is busted reward is negative
                     transitions.append((terminal.freeze(), -1, prob))
                 else:
-                    transitions.append((draw.copy().update(card).freeze(), 0, prob))
+                    transitions.append((draw.copy().updates(card).freeze(), 0, prob))
         return transitions
 
     def align_decks(self, draw_list):
@@ -154,29 +202,33 @@ class SetteMezzoEnv(gym.Env):
         # create the deck having init opponent card
         # + init player card (already in self.game_deck)
         # + next player card (which have to be added)
-        for card in (draw_list - self.player.draw_collection).data:
-            self.initial_deck.update(card)
-            self.initial_player.update(card)
+        for card in (draw_list - self.player.draws).data:
+            self.initial_deck.updates(card)
+            self.initial_player.updates(card)
 
-    def get_transitions(self, draw_list, action):
+    def get_transitions(self, draws, action):
         """
         Generates all the possible next states which
         can be reached from the provided card sequence
         combination, together with corresponding rewards
         and reaching probabilities
-        :param draw_list: Card sequence
+        :param draws: Card sequence
         :param action: action to take
         :return: None
         """
-        if draw_list.data[0] == END_NAME:
-            return [[draw_list, 0, 1]]
-        if len(draw_list.data) >= self.depth:
-            return [[draw_list, 0, 1]]
+        if draws.data[0] == END_NAME:
+            return [[draws, 0, 1]]
+        if len(draws.data) >= self.depth:
+            return [[draws, 0, 1]]
         else:
-            self.align_decks(draw_list)
+            self.align_decks(draws)
             if action == 'hit':
-                return self.get_transitions_hit(draw_list)
+                return self.get_transitions_hit(draws)
             elif action == 'stick':
-                return self.get_transitions_stick(draw_list)
+                return self.get_transitions_stick(draws)
             else:
                 raise ValueError('Action not allowed')
+
+    def is_terminal(self):
+        # TODO: will need to implement it!
+        return False

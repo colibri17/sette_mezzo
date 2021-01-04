@@ -1,12 +1,12 @@
-import draws.draw_factory
-import draws.draw_manager
+import draws.draws_factory
+import draws.draws_manager
 import env
 
 
 class Player:
 
     def __init__(self, draw_collection=None, policy=None, limit=None):
-        self.draw_collection = draws.draw_factory.DrawCollection([]) if draw_collection is None else draw_collection
+        self.draw_collection = draws.draws_factory.Draws([]) if draw_collection is None else draw_collection
         self.policy = None if policy is None else policy
         self.busted = self.is_busted()
         self.limit = limit
@@ -15,7 +15,7 @@ class Player:
         self.draw_collection.update(card_name)
 
     def reset_status(self):
-        self.draw_collection = draws.draw_factory.DrawCollection([])
+        self.draw_collection = draws.draws_factory.Draws([])
         self.busted = False
 
     def sum(self):

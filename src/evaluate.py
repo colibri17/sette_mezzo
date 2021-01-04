@@ -60,7 +60,7 @@ for n_game in range(n):
     environment.get_card_and_update(player_card)
 
     action = dp_player.act()
-    logger.debug('Player draw_list %s, action %s', dp_player.draw_collection.data, action)
+    logger.debug('Player draw_list %s, action %s', dp_player.draws.data, action)
     playing = action == 'hit'
     over_depth = False
     need_to_play = True
@@ -69,17 +69,17 @@ for n_game in range(n):
         if dp_player.is_busted():
             playing = False
             need_to_play = False
-            logger.debug('Player busted, %s', dp_player.draw_collection.data)
-        elif len(dp_player.draw_collection.data) > depth - 1:
+            logger.debug('Player busted, %s', dp_player.draws.data)
+        elif len(dp_player.draws.data) > depth - 1:
             playing = False
             over_depth = True
             need_to_play = False
-            logger.debug('Stop evaluating input_player moves, %s', dp_player.draw_collection.data)
+            logger.debug('Stop evaluating input_player moves, %s', dp_player.draws.data)
         else:
             action = dp_player.act()
             if action == 'stick':
                 playing = False
-            logger.debug('Player draw_list %s, action %s', dp_player.draw_collection.data, action)
+            logger.debug('Player draw_list %s, action %s', dp_player.draws.data, action)
 
     # Opponent input_player
     if need_to_play:
@@ -119,7 +119,7 @@ for n_game in range(n):
     else:
         match_result = -2
 
-    match_summary.append([n_game, dp_player.draw_collection.data,
+    match_summary.append([n_game, dp_player.draws.data,
                           greedy_player.draw_collection.data,
                           match_result])
     logger.debug('\n' * 2)
