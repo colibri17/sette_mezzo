@@ -49,6 +49,7 @@ class SetteMezzoEnv:
 
     def __init__(self, players, deck, depth=4):
         self.num_actions = 0
+        self.num_played = 0
         self.players = players
         self.current_player = self.players[0]
         self.game_deck = deck
@@ -90,6 +91,7 @@ class SetteMezzoEnv:
                 self.updates(card)
             else:
                 self.current_player = self.players[1 - self.current_player.id]
+                self.num_played += 1
 
     def generate_state_space(self, player):
         """
@@ -238,10 +240,37 @@ class SetteMezzoEnv:
                 raise ValueError('Action not allowed')
 
     def returns(self):
-        pass
+        """
+        Return the payoffs for
+        the players
+        :return:
+        """
+        logger.info('Player0 draws %s', self.players[0].draws)
+        logger.info('Player1 draws %s', self.players[1].draws)
+
+        if self.current_player.is_busted():
+            if self.current_player.id == 0:
+                return [-1, 1]
+            else:
+                return [1, -1]
+
+        if self.players[0].sum() > self.players[1].sum():
+            return [1, -1]
+        elif self.players[0].sum() == self.players[1].sum():
+            return [0, 0]
+        else:
+            return [-1, 1]
 
     def is_terminal(self):
-        # TODO: will need to implement it!
+        """
+        Assess if the given state
+        is terminal
+        :return:
+        """
         if self.current_player.is_busted():
+            logger.info('Player %s busted', self.current_player.id)
+            return True
+        if self.num_played == 2:
+            logger.info('Both players played')
             return True
         return False

@@ -1,12 +1,12 @@
 import logging
-
+import settings
 from agents import dp, greedy
 from decks.deck_factory import Deck
 from env import SetteMezzoEnv, Player
 
 logger = logging.getLogger('sette-mezzo')
 
-depth = 3
+depth = 4
 
 deck = Deck()
 logger.info('Deck %s', deck)
@@ -24,28 +24,8 @@ state.apply_action(None)
 while not state.is_terminal():
     agent = agents[state.current_player.id]
     action = agent.step(state)
+    logger.info('Player %s action %s', state.current_player.id, action)
     state.apply_action(action)
 
 returns = state.returns()
-#
-# # Learn
-# dp_agent.learn()
-# action = dp_agent.act()
-# logger.info('Player draw_list %s, action %s', dp_agent.draw_collection.data, action)
-#
-# i = 2
-# playing = action == 'hit'
-# while playing:
-#     player_card = input('Player card number %d: ' % i)
-#     if len(dp_agent.draw_collection.data) > depth:
-#         logger.info('More than allowed depth. Increase the variable depth')
-#         playing = False
-#         break
-#     if not dp_agent.is_busted():
-#         action = dp_agent.act()
-#         logger.info('Player draw_list %s, action %s', dp_agent.draw_collection.data, action)
-#     else:
-#         logger.info('Player is busted!')
-#         playing = False
-#     if action == 'stick':
-#         playing = False
+logger.info(f"Returns: {returns}")
