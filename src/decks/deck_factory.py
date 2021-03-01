@@ -35,29 +35,78 @@ class Deck:
         self._update_probs()
 
     def update(self, card):
+        """
+        Delete from the deck the provided card
+        and update the draw probabilities
+        accordingly
+        :param card: card
+        :return: None
+        """
         self.data[card] -= 1
         self._update_probs()
 
     def copy(self):
+        """
+        Copy the deck
+        :return: new copied deck instance
+        """
         return Deck(dict(self.data))
 
+    def copy_move_ahead(self, cards):
+        """
+        Create a new copied deck instance
+        and update it with the provided cards
+        :param cards: list of cards used to update the copied deck
+        :return: updated copied deck
+        """
+        forward_deck = self.copy()
+        for card in cards:
+            forward_deck.update(card)
+        return forward_deck
+
     def _update_probs(self):
+        """
+        Recompute the probabilities of drawing
+        cards in the deck
+        :return: None
+        """
         probs = list(np.array(list(self.data.values())) / np.array(list(self.data.values())).sum())
         self.card_probs = {card: prob for card, prob in zip(CARD_NAMES, probs)}
 
     def get_prob_of_card(self, card):
+        """
+        Get the probability of drawing
+        the provided card from the deck
+        :param card: card to be evaluated
+        :return: a number representing the probability
+        """
         return self.card_probs[card]
 
     def get_probs(self):
+        """
+        Get the probabilities of drawing
+        all the cards in the deck
+        :return: list of probabilities
+        """
         return self.card_probs.values()
 
     def get_cards(self):
+        """
+        Get the cards in the deck
+        :return: list of cards
+        """
         return self.card_probs.keys()
 
     def get_cards_and_probs(self):
         return self.card_probs.items()
 
     def is_feasible(self):
+        """
+        Assess if the deck is a valid deck by
+        checking that all the values in the
+        deck are not strictly negative
+        :return:
+        """
         return all(value >= 0 for value in self.card_probs.values())
 
     def __repr__(self):

@@ -20,7 +20,7 @@ class DpAgent:
         by using a policy iteration algorithm.
         :return: None
         """
-        logger.info('Learning optimal policy..')
+        logger.info('Learning optimal policy for DP agent..')
         logger.debug('First we need to generate the state space..')
         player = state.players[state.current_player.id]
         self.state_space = state.generate_state_space(player)
@@ -61,7 +61,6 @@ class DpAgent:
                 # Initial value of the draws
                 v_init = v[draws_data]
                 # Final value of the draws
-                # TODO: why do we need v_candidate and cannot directly use v?
                 v_candidate = {draws_data: 0}
                 # For each action I can apply..
                 for action in state.action_space:
@@ -75,14 +74,17 @@ class DpAgent:
                                      reward, prob, v[draws_data])
                 v[draws_data] = v_candidate[draws_data]
                 delta = max(delta, abs(v_init - v[draws_data]))
-            logger.debug('Epoch finished. Delta %s', delta)
+            logger.info('Epoch finished. Delta %s', delta)
         return v
 
     def _policy_iteration(self, state):
         """
         Apply the policy iteration algorithm, which
         consists of iterative steps of policy evaluation
-        and policy improvement
+        and policy improvement. In the policy evaluation
+        step, we evaluate the value of each state according to
+        the direct policy. In policy improvement we greedly
+        update the policy towards the best next possible action
         :param state: game state
         :return: the optimal policy and optimal value of the game state
         """
