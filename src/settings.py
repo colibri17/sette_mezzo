@@ -64,7 +64,7 @@ LOGGING = {
     },
     'loggers': {
         'sette-mezzo': {
-            'level': 'INFO',
+            'level': 'DEBUG',
             'handlers': ['console', 'debug_file', 'info_file', 'permanent_debug_file']
         }
     }

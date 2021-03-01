@@ -44,36 +44,34 @@ class DpAgent:
 
     def _policy_evaluation(self, policy, state):
         """
-        Evaluate the value of the current game state
+        Assess the value of the current game state
         according to the provided policy
         :param policy: policy to be evaluated
         :param state: game state
         :return: the value of the current game state
         """
         v = {draws.data: 0 for draws in self.state_space}
-        # Convergence-tracking variable
+        # Convergence tracking variable
         delta = self.theta + 1
         while delta > self.theta:
             delta = 0
             # For each draws in the state_space
             for draws in self.state_space:
-                draws_data = draws.data
+                drs = draws.data
                 # Initial value of the draws
-                v_init = v[draws_data]
+                v_init = v[drs]
                 # Final value of the draws
-                v_candidate = {draws_data: 0}
+                v_candidate = {drs: 0}
                 # For each action I can apply..
                 for action in state.action_space:
                     transitions = state.get_transitions(draws, action)
                     # ..and for each next state and reward and action probability
                     for next_state, reward, prob in transitions:
                         # Bellman update rule
-                        v_candidate[draws_data] += policy[draws_data][action] * prob * (
-                                reward + self.gamma * v[next_state.data])
-                        logger.debug('%s, %s, %s, %s, %s, %s', draws_data, action, next_state.data,
-                                     reward, prob, v[draws_data])
-                v[draws_data] = v_candidate[draws_data]
-                delta = max(delta, abs(v_init - v[draws_data]))
+                        v_candidate[drs] += policy[drs][action] * prob * (reward + self.gamma * v[next_state.data])
+                        logger.debug('%s, %s, %s, %s, %s, %s', drs, action, next_state.data, reward, prob, v[drs])
+                v[drs] = v_candidate[drs]
+                delta = max(delta, abs(v_init - v[drs]))
             logger.info('Epoch finished. Delta %s', delta)
         return v
 
@@ -82,16 +80,16 @@ class DpAgent:
         Apply the policy iteration algorithm, which
         consists of iterative steps of policy evaluation
         and policy improvement. In the policy evaluation
-        step, we evaluate the value of each state according to
-        the direct policy. In policy improvement we greedly
-        update the policy towards the best next possible action
+        step, we assess the value of each state according to
+        the current policy. In policy improvement we greedly
+        update the policy towards the best next possible action.
         :param state: game state
         :return: the optimal policy and optimal value of the game state
         """
         # Initial random policy
         pi = {draws.data: {'hit': 0.5, 'stick': 0.5} for draws in self.state_space}
         value_fn = None
-        # Convergence-tracking variable
+        # Convergence tracking variable
         policy_stable = False
         while not policy_stable:
             # evaluate the current policy
