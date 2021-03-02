@@ -28,4 +28,5 @@ while not state.is_terminal():
     state.apply_action(action)
 
 returns = state.returns()
-logger.info(f"Returns: {returns}")
+end = 'winned' if returns[0] > returns[1] else 'tied' if returns[0] == returns[1] else 'lost'
+logger.info(f"Returns: {returns}, you {end}")
