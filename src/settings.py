@@ -13,16 +13,22 @@ def clean_dirs(dirs):
             os.makedirs(path)
 
 
-run_dir = 'run1'
+def create_dirs(dirs):
+    for path in dirs:
+        if not os.path.exists(path):
+            os.makedirs(path)
+
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 BASE_DIR = os.path.dirname(CURRENT_DIR)
 sys.path.insert(0, BASE_DIR)
-RUNS_DIR = os.path.join(BASE_DIR, 'runs')
-SELECTED_RUNS_DIR = os.path.join(RUNS_DIR, run_dir)
-LOGS_DIR = os.path.join(SELECTED_RUNS_DIR, 'logs')
+MODELS_DIR = os.path.join(BASE_DIR, 'models')
+LOGS_DIR = os.path.join(BASE_DIR, 'logs')
 
-dirs_to_clean = [SELECTED_RUNS_DIR, LOGS_DIR]
+dirs_to_create = [MODELS_DIR, LOGS_DIR]
+create_dirs(dirs_to_create)
+
+dirs_to_clean = []
 clean_dirs(dirs_to_clean)
 
 LOGGING = {
@@ -71,4 +77,3 @@ LOGGING = {
 }
 
 logging.config.dictConfig(LOGGING)
-

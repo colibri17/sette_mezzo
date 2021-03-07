@@ -20,7 +20,7 @@ the opponent's and loses if his score is smaller. If the scores equal there is a
 # Solving the game
 The algorithm used to solve the game is based on reinforcement learning. Specifically, policy iteration is implemented.  
 Policy iteration is composed by two steps:
-* *Policy evaluation*, which finds the value of each state according to the current policy. 
+* *Policy evaluation*, which identify the value of each state basing on the current policy. 
   This step is performed by using dynamic programming. All the states are evaluated by using the [Bellman equation](https://en.wikipedia.org/wiki/Bellman_equation)
   which is based on the action, the next state value, the immediate reward obtained, and the discount factor. 
   The reward gained by the player differs depending on the player choice:
@@ -50,8 +50,8 @@ The game proceeds as it follows:
   on policy evaluation and policy improvements steps. 
 
 # Installing
-The repository can be installed by using `pip`. It is recommended to create a virtual environment. Using `venv` this
-can be done as it follows (Ubuntu):
+The repository can be easily installed by using `pip`. It is recommended to create a virtual environment to 
+execute the scripts. To install the repository with `venv` ex:
 ```
 # Clone the repository
 git clone https://github.com/colibri17/sette_mezzo

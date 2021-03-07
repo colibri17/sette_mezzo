@@ -7,11 +7,12 @@ from env import SetteMezzoEnv, Player
 logger = logging.getLogger('sette-mezzo')
 
 depth = 4
+limit = 4
 
 deck = Deck()
 logger.info('Deck %s', deck)
 players = {Player(0): dp.DpAgent(),
-           Player(1, limit=5): greedy.BookmakerAgent(limit=5)}
+           Player(1, limit=limit): greedy.BookmakerAgent(limit=limit)}
 agents = list(players.values())
 
 state = SetteMezzoEnv(list(players.keys()), deck, depth)

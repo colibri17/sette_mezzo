@@ -77,23 +77,25 @@ class SetteMezzoEnv:
         self.game_deck = deck_factory.Deck()
         self.player = players.player.Player()
 
-    def apply_action(self, action):
+    def apply_action(self, action, card=None):
         """
         Apply the provided action to the
         current game state
+        :param card: card to draw. If none, randomly draws a card
         :param action: action to be applied
         :return: None
         """
         # Draw initial cards for both the players
         if self.num_actions < 2:
-            card = input(f'Initial card player{self.current_player.id}: ')
-            self.get_card(card)
+            if card is None:
+                card = input(f'Initial card player{self.current_player.id}: ')
+            card = self.get_card(card)
             self.updates(card)
             self.current_player = self.players[1 - self.current_player.id]
             self.num_actions += 1
         else:
             if action == 'hit':
-                card = self.get_card()
+                card = self.get_card(card)
                 self.updates(card)
             else:
                 self.current_player = self.players[1 - self.current_player.id]

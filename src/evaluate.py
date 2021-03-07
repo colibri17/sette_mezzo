@@ -1,41 +1,21 @@
 import itertools
 import logging
-
 import pandas as pd
-
 from decks import deck_factory
 import env
 import settings
-from players import dp, greedy
+
+from agents import dp, greedy
+from decks.deck_factory import Deck
+from env import SetteMezzoEnv, Player
 
 logger = logging.getLogger('sette-mezzo')
 
 match_summary = []
 player_policies = {}
 n = 100000
-depth = 5
-limit = 5
-
-# Learn starting from an initial configuration
-logger.info('Learning..')
-for ind, (player_card, opponent_card) in enumerate(itertools.product(deck_factory.CARD_NAMES, repeat=2)):
-    logger.info('Training number %d', ind + 1)
-    # Reset the game
-    environment = env.SetteMezzoEnv(depth)
-    dp_player = dp.DynamicProgrammer()
-    greedy_player = greedy.GreedyProgrammer(limit=limit)
-    # Set initial state
-    logger.info('Initial card for input_player %s, initial card for opposite input_player %s', player_card, opponent_card)
-    environment.set_current_players(greedy_player, dp_player)
-    environment.get_card_and_update(opponent_card)
-    environment.set_current_players(dp_player, greedy_player)
-    environment.get_card_and_update(player_card)
-
-    if environment.game_deck.is_feasible():
-        # Player 1 playing
-        environment.set_current_players(dp_player, greedy_player)
-        dp_player.learn(environment)
-        player_policies[(player_card, opponent_card)] = dp_player
+depth = 4
+limit = 4
 
 # Play
 logger.info('Starting to play')
@@ -127,4 +107,4 @@ for n_game in range(n):
     # Analysis
     if (n_game + 1) % 1000 == 0:
         df = pd.DataFrame(match_summary, columns=['game_number', 'player_draw', 'opponent_draw', 'result'])
-        df.to_pickle('%s/stats.pkl' % settings.SELECTED_RUNS_DIR)
+        df.to_pickle('%s/stats.pkl' % settings.SELECTED_MODELS_DIR)
