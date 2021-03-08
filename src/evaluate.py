@@ -68,4 +68,4 @@ for n_game in range(n):
     if (n_game + 1) % 1000 == 0:
         logger.warning('Played match number %d', n_game + 1)
         df = pd.DataFrame(match_summary, columns=['game_number', 'player_draw', 'opponent_draw', 'result'])
-        df.to_pickle('%s/results.pkl' % settings.DATA_DIR)
+        df.to_csv('%s/results.csv' % settings.DATA_DIR)
