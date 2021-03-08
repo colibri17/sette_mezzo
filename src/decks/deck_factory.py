@@ -100,15 +100,6 @@ class Deck:
     def get_cards_and_probs(self):
         return self.card_probs.items()
 
-    def is_feasible(self):
-        """
-        Assess if the deck is a valid deck by
-        checking that all the values in the
-        deck are not strictly negative
-        :return:
-        """
-        return all(value >= 0 for value in self.card_probs.values())
-
     def __repr__(self):
         return str(self.data)
 

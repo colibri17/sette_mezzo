@@ -242,6 +242,9 @@ class SetteMezzoEnv:
         logger.info('Player0 draws %s', self.players[0].draws)
         logger.info('Player1 draws %s', self.players[1].draws)
 
+        if len(self.current_player.draws.data) > self.depth:
+            return [None, None]
+
         if self.current_player.is_busted():
             if self.current_player.id == 0:
                 return [-1, 1]
@@ -259,12 +262,15 @@ class SetteMezzoEnv:
         """
         Assess if the given state
         is terminal
-        :return:
+        :return: True if the state is terminal, false otherwise
         """
         if self.current_player.is_busted():
             logger.info('Player %s busted', self.current_player.id)
             return True
         if self.num_played == 2:
             logger.info('Both players played')
+            return True
+        if len(self.current_player.draws.data) > self.depth:
+            logger.info('Top depth reached')
             return True
         return False

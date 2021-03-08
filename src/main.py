@@ -1,5 +1,5 @@
 import logging
-import settings
+
 from agents import dp, greedy
 from decks.deck_factory import Deck
 from env import SetteMezzoEnv, Player

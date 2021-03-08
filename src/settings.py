@@ -22,10 +22,10 @@ def create_dirs(dirs):
 CURRENT_DIR = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 BASE_DIR = os.path.dirname(CURRENT_DIR)
 sys.path.insert(0, BASE_DIR)
-MODELS_DIR = os.path.join(BASE_DIR, 'models')
+DATA_DIR = os.path.join(BASE_DIR, 'data')
 LOGS_DIR = os.path.join(BASE_DIR, 'logs')
 
-dirs_to_create = [MODELS_DIR, LOGS_DIR]
+dirs_to_create = [DATA_DIR, LOGS_DIR]
 create_dirs(dirs_to_create)
 
 dirs_to_clean = []
@@ -70,7 +70,7 @@ LOGGING = {
     },
     'loggers': {
         'sette-mezzo': {
-            'level': 'INFO',
+            'level': 'WARNING',
             'handlers': ['console', 'debug_file', 'info_file', 'permanent_debug_file']
         }
     }
