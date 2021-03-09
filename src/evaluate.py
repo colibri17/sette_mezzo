@@ -17,7 +17,7 @@ n = 100000
 # Use the same limit you set on train.py
 limit = 4
 # Use the same depth you set on train.py
-depth = 4
+depth = 5
 
 # Retrieve the dynamic players I saved in
 # train.py.
