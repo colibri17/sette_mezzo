@@ -70,7 +70,7 @@ LOGGING = {
     },
     'loggers': {
         'sette-mezzo': {
-            'level': 'WARNING',
+            'level': 'INFO',
             'handlers': ['console', 'debug_file', 'info_file', 'permanent_debug_file']
         }
     }
